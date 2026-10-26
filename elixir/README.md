@@ -1,5 +1,7 @@
 # Symphony Elixir
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 This directory contains the current Elixir/OTP implementation of Symphony, based on
 [`SPEC.md`](../SPEC.md) at the repository root.
 
@@ -65,7 +67,7 @@ mise exec -- elixir --version
 ## Run
 
 ```bash
-git clone https://github.com/openai/symphony
+git clone https://github.com/MichaelFsk/symphony
 cd symphony/elixir
 mise trust
 mise install
@@ -102,6 +104,39 @@ After downloading the executable for your platform from a release:
 chmod +x ./symphony-v0.0.1-macos_arm64
 ./symphony-v0.0.1-macos_arm64 ./WORKFLOW.md
 ```
+
+## Language
+
+English (`en`) and Simplified Chinese (`zh-CN`) are supported for the dashboard and
+user-facing CLI text. English is the default, preserving existing integrations and snapshots.
+Configure the default in your project’s `WORKFLOW.md`:
+
+```yaml
+observability:
+  language: zh-CN
+```
+
+Override it for one process:
+
+```bash
+./bin/symphony ./WORKFLOW.md --language zh-CN --port 4000
+./bin/symphony ./WORKFLOW.md --language en --port 4000
+```
+
+The web dashboard has **English** and **简体中文** links. Their `?lang=en` and
+`?lang=zh-CN` query parameters affect only that browser request and LiveView session;
+visitors do not change the process default or other visitors’ language. Existing browser sessions
+keep their chosen language until a full reload; new requests use the current configured default.
+Unsupported browser language values fall back to the configured default. Invalid configured
+or CLI language values fail validation.
+
+Language settings translate interface labels, navigation and CLI presentation. Tracker issue
+states, issue descriptions, agent output, API field names, source paths and diagnostic error
+payloads retain their original values. Language selection does not translate a workflow prompt
+or issue automatically. The JSON observability API remains language-independent.
+
+Language switching requires a build containing this fork’s changes. Existing upstream
+precompiled binaries do not gain it automatically.
 
 ## Configuration
 

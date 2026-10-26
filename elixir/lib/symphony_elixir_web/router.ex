@@ -8,10 +8,17 @@ defmodule SymphonyElixirWeb.Router do
 
   pipeline :browser do
     plug(:fetch_session)
+    plug(:assign_language)
     plug(:fetch_live_flash)
     plug(:put_root_layout, html: {SymphonyElixirWeb.Layouts, :root})
     plug(:protect_from_forgery)
     plug(:put_secure_browser_headers)
+  end
+
+  defp assign_language(conn, _opts) do
+    conn = Plug.Conn.fetch_query_params(conn)
+    language = SymphonyElixir.I18n.resolve(conn.query_params["lang"], SymphonyElixir.Config.language())
+    Plug.Conn.assign(conn, :language, language)
   end
 
   scope "/", SymphonyElixirWeb do

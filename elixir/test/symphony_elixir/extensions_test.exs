@@ -565,6 +565,54 @@ defmodule SymphonyElixir.ExtensionsTest do
     refute render(view) =~ "javascript:alert"
   end
 
+  test "dashboard switches language per browser and preserves runtime and API data" do
+    orchestrator_name = Module.concat(__MODULE__, :LanguageOrchestrator)
+    {:ok, _pid} = StaticOrchestrator.start_link(name: orchestrator_name, snapshot: static_snapshot())
+    start_test_endpoint(orchestrator: orchestrator_name, snapshot_timeout_ms: 50)
+
+    chinese_page = html_response(get(build_conn(), "/?lang=zh-CN"), 200)
+    assert chinese_page =~ ~s(<html lang="zh-CN">)
+    assert chinese_page =~ "<title>Symphony 运行监控</title>"
+    {:ok, chinese, html} = live(build_conn(), "/?lang=zh-CN")
+    assert html =~ "运行控制台"
+    assert html =~ "重试队列"
+    assert html =~ "复制 ID"
+    assert html =~ ~s(data-copied="已复制")
+    assert html =~ ~s(aria-label="在任务跟踪器中打开 MT-HTTP")
+    assert html =~ "In Progress"
+    assert html =~ "turn blocked: waiting for user input"
+    assert html =~ ~s(href="/?lang=en")
+    assert html =~ ~s(href="/?lang=zh-CN")
+
+    {:ok, english, html} = live(build_conn(), "/?lang=en")
+    assert html =~ "Operations Dashboard"
+    refute html =~ "运行控制台"
+    StatusDashboard.notify_update()
+    assert render(chinese) =~ "运行控制台"
+    assert render(english) =~ "Operations Dashboard"
+    assert html_response(get(build_conn(), "/?lang=unknown"), 200) =~ ~s(<html lang="en">)
+    assert json_response(get(build_conn(), "/api/v1/state?lang=zh-CN"), 200)["running"] |> hd() |> Map.fetch!("state") == "In Progress"
+  end
+
+  test "workflow language reload changes terminal defaults while CLI override wins" do
+    workflow = Workflow.workflow_file_path()
+    original = File.read!(workflow)
+    File.write!(workflow, String.replace(original, "observability:\n", "observability:\n  language: zh-CN\n"))
+    assert :ok = WorkflowStore.force_reload()
+    assert Config.language() == "zh-CN"
+
+    snapshot = {:ok, %{running: [], retrying: [], codex_totals: %{}}}
+    terminal = StatusDashboard.format_snapshot_content_for_test(snapshot, 0)
+    assert terminal =~ "SYMPHONY 状态"
+    assert terminal =~ "当前没有运行中的执行器"
+    assert terminal =~ "时长 / 轮次"
+
+    Application.put_env(:symphony_elixir, :language_override, "en")
+    on_exit(fn -> Application.delete_env(:symphony_elixir, :language_override) end)
+    assert Config.language() == "en"
+    assert StatusDashboard.format_snapshot_content_for_test(snapshot, 0) =~ "No active agents"
+  end
+
   test "dashboard liveview renders an unavailable state without crashing" do
     start_test_endpoint(
       orchestrator: Module.concat(__MODULE__, :MissingDashboardOrchestrator),
