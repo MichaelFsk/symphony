@@ -27,6 +27,9 @@ hooks:
     fi
   before_remove: |
     cd elixir && mise exec -- mix workspace.before_remove
+observability:
+  # Operator UI language: en (English) or zh-CN (简体中文).
+  language: en
 agent:
   max_concurrent_agents: 10
   max_turns: 20

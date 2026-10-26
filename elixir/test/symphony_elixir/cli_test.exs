@@ -136,4 +136,53 @@ defmodule SymphonyElixir.CLITest do
 
     assert :ok = CLI.evaluate([@ack_flag, "WORKFLOW.md"], deps)
   end
+
+  test "help is bilingual and never starts the runtime" do
+    assert {:help, english} = CLI.evaluate(["--help"], %{})
+    assert english =~ "Usage: symphony"
+    assert english =~ "--language <en|zh-CN>"
+    assert {:help, chinese} = CLI.evaluate(["--help", "--language", "zh-CN"], %{})
+    assert chinese =~ "用法：symphony"
+    assert {:error, banner} = CLI.evaluate(["--language", "zh-CN"], %{})
+    assert banner =~ "早期工程预览版"
+    assert banner =~ @ack_flag
+    assert {:error, "Supported languages: en, zh-CN"} = CLI.evaluate(["--language", "fr"], %{})
+    assert {:error, usage} = CLI.evaluate(["--language", "zh-CN", "--unknown"], %{})
+    assert usage =~ "用法：symphony"
+  end
+
+  test "language override reaches the runtime and startup failures are localized" do
+    parent = self()
+
+    deps = %{
+      file_regular?: fn _path -> false end,
+      set_language_override: fn language ->
+        send(parent, {:language, language})
+        :ok
+      end,
+      set_workflow_file_path: fn _path -> :ok end,
+      set_logs_root: fn _path -> :ok end,
+      set_server_port_override: fn _port -> :ok end,
+      ensure_all_started: fn -> {:error, :boom} end
+    }
+
+    assert {:error, missing} = CLI.evaluate([@ack_flag, "--language", "zh-CN", "missing.md"], deps)
+    assert missing =~ "找不到工作流文件"
+    assert_received {:language, "zh-CN"}
+    assert {:error, failed} = CLI.evaluate([@ack_flag, "--language", "zh-CN"], %{deps | file_regular?: fn _ -> true end})
+    assert failed =~ "无法使用工作流"
+    assert failed =~ ":boom"
+  end
+
+  test "startup diagnostics use the workflow language with an explicit CLI override" do
+    path = Path.join(System.tmp_dir!(), "symphony-cli-language-#{System.unique_integer([:positive])}.md")
+    File.write!(path, "---\nobservability:\n  language: zh-CN\n---\nPrompt")
+    on_exit(fn -> File.rm(path) end)
+    assert {:error, banner} = CLI.evaluate([path], %{})
+    assert banner =~ "早期工程预览版"
+    assert {:error, banner} = CLI.evaluate(["--language", "en", path], %{})
+    assert banner =~ "low key engineering preview"
+    assert {:help, help} = CLI.evaluate(["--help", path], %{})
+    assert help =~ "用法：symphony"
+  end
 end

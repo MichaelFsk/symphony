@@ -5,13 +5,15 @@ defmodule SymphonyElixirWeb.DashboardLive do
 
   use Phoenix.LiveView, layout: {SymphonyElixirWeb.Layouts, :app}
 
+  alias SymphonyElixir.{Config, I18n}
   alias SymphonyElixirWeb.{Endpoint, ObservabilityPubSub, Presenter}
   @runtime_tick_ms 1_000
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     socket =
       socket
+      |> assign(:language, I18n.resolve(params["lang"], Config.language()))
       |> assign(:payload, load_payload())
       |> assign(:now, DateTime.utc_now())
 
@@ -45,24 +47,29 @@ defmodule SymphonyElixirWeb.DashboardLive do
         <div class="hero-grid">
           <div>
             <p class="eyebrow">
-              Symphony Observability
+              <%= I18n.t(@language, "Symphony Observability") %>
             </p>
             <h1 class="hero-title">
-              Operations Dashboard
+              <%= I18n.t(@language, "Operations Dashboard") %>
             </h1>
             <p class="hero-copy">
-              Current state, retry pressure, token usage, and orchestration health for the active Symphony runtime.
+              <%= I18n.t(@language, "Current state, retry pressure, token usage, and orchestration health for the active Symphony runtime.") %>
             </p>
           </div>
 
           <div class="status-stack">
+            <nav aria-label={I18n.t(@language, "Language")} class="language-switcher">
+              <a href="/?lang=en" lang="en" aria-current={if @language == "en", do: "true", else: "false"}>English</a>
+              <span aria-hidden="true"> / </span>
+              <a href="/?lang=zh-CN" lang="zh-CN" aria-current={if @language == "zh-CN", do: "true", else: "false"}>简体中文</a>
+            </nav>
             <span class="status-badge status-badge-live">
               <span class="status-badge-dot"></span>
-              Live
+              <%= I18n.t(@language, "Live") %>
             </span>
             <span class="status-badge status-badge-offline">
               <span class="status-badge-dot"></span>
-              Offline
+              <%= I18n.t(@language, "Offline") %>
             </span>
           </div>
         </div>
@@ -71,52 +78,52 @@ defmodule SymphonyElixirWeb.DashboardLive do
       <%= if @payload[:error] do %>
         <section class="error-card">
           <h2 class="error-title">
-            Snapshot unavailable
+            <%= I18n.t(@language, "Snapshot unavailable") %>
           </h2>
           <p class="error-copy">
-            <strong><%= @payload.error.code %>:</strong> <%= @payload.error.message %>
+            <strong><%= @payload.error.code %>:</strong> <%= I18n.t(@language, @payload.error.message) %>
           </p>
         </section>
       <% else %>
         <section class="metric-grid">
           <article class="metric-card">
-            <p class="metric-label">Running</p>
+            <p class="metric-label"><%= I18n.t(@language, "Running") %></p>
             <p class="metric-value numeric"><%= @payload.counts.running %></p>
-            <p class="metric-detail">Active issue sessions in the current runtime.</p>
+            <p class="metric-detail"><%= I18n.t(@language, "Active issue sessions in the current runtime.") %></p>
           </article>
 
           <article class="metric-card">
-            <p class="metric-label">Retrying</p>
+            <p class="metric-label"><%= I18n.t(@language, "Retrying") %></p>
             <p class="metric-value numeric"><%= @payload.counts.retrying %></p>
-            <p class="metric-detail">Issues waiting for the next retry window.</p>
+            <p class="metric-detail"><%= I18n.t(@language, "Issues waiting for the next retry window.") %></p>
           </article>
 
           <article class="metric-card">
-            <p class="metric-label">Blocked</p>
+            <p class="metric-label"><%= I18n.t(@language, "Blocked") %></p>
             <p class="metric-value numeric"><%= @payload.counts.blocked %></p>
-            <p class="metric-detail">Issues paused for operator input or approval.</p>
+            <p class="metric-detail"><%= I18n.t(@language, "Issues paused for operator input or approval.") %></p>
           </article>
 
           <article class="metric-card">
-            <p class="metric-label">Total tokens</p>
+            <p class="metric-label"><%= I18n.t(@language, "Total tokens") %></p>
             <p class="metric-value numeric"><%= format_int(@payload.codex_totals.total_tokens) %></p>
             <p class="metric-detail numeric">
-              In <%= format_int(@payload.codex_totals.input_tokens) %> / Out <%= format_int(@payload.codex_totals.output_tokens) %>
+              <%= I18n.t(@language, "In") %> <%= format_int(@payload.codex_totals.input_tokens) %> / <%= I18n.t(@language, "Out") %> <%= format_int(@payload.codex_totals.output_tokens) %>
             </p>
           </article>
 
           <article class="metric-card">
-            <p class="metric-label">Runtime</p>
+            <p class="metric-label"><%= I18n.t(@language, "Runtime") %></p>
             <p class="metric-value numeric"><%= format_runtime_seconds(total_runtime_seconds(@payload, @now)) %></p>
-            <p class="metric-detail">Total Codex runtime across completed and active sessions.</p>
+            <p class="metric-detail"><%= I18n.t(@language, "Total Codex runtime across completed and active sessions.") %></p>
           </article>
         </section>
 
         <section class="section-card">
           <div class="section-header">
             <div>
-              <h2 class="section-title">Rate limits</h2>
-              <p class="section-copy">Latest upstream rate-limit snapshot, when available.</p>
+              <h2 class="section-title"><%= I18n.t(@language, "Rate limits") %></h2>
+              <p class="section-copy"><%= I18n.t(@language, "Latest upstream rate-limit snapshot, when available.") %></p>
             </div>
           </div>
 
@@ -126,13 +133,13 @@ defmodule SymphonyElixirWeb.DashboardLive do
         <section class="section-card">
           <div class="section-header">
             <div>
-              <h2 class="section-title">Running sessions</h2>
-              <p class="section-copy">Active issues, last known agent activity, and token usage.</p>
+              <h2 class="section-title"><%= I18n.t(@language, "Running sessions") %></h2>
+              <p class="section-copy"><%= I18n.t(@language, "Active issues, last known agent activity, and token usage.") %></p>
             </div>
           </div>
 
           <%= if @payload.running == [] do %>
-            <p class="empty-state">No active sessions.</p>
+            <p class="empty-state"><%= I18n.t(@language, "No active sessions.") %></p>
           <% else %>
             <div class="table-wrap">
               <table class="data-table data-table-running">
@@ -146,20 +153,20 @@ defmodule SymphonyElixirWeb.DashboardLive do
                 </colgroup>
                 <thead>
                   <tr>
-                    <th>Issue</th>
-                    <th>State</th>
-                    <th>Session</th>
-                    <th>Runtime / turns</th>
-                    <th>Codex update</th>
-                    <th>Tokens</th>
+                    <th><%= I18n.t(@language, "Issue") %></th>
+                    <th><%= I18n.t(@language, "State") %></th>
+                    <th><%= I18n.t(@language, "Session") %></th>
+                    <th><%= I18n.t(@language, "Runtime / turns") %></th>
+                    <th><%= I18n.t(@language, "Codex update") %></th>
+                    <th><%= I18n.t(@language, "Tokens") %></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr :for={entry <- @payload.running}>
                     <td>
                       <div class="issue-stack">
-                        <.issue_identifier identifier={entry.issue_identifier} url={entry.issue_url} />
-                        <a class="issue-link" href={"/api/v1/#{entry.issue_identifier}"}>JSON details</a>
+                        <.issue_identifier language={@language} identifier={entry.issue_identifier} url={entry.issue_url} />
+                        <a class="issue-link" href={"/api/v1/#{entry.issue_identifier}"}><%= I18n.t(@language, "JSON details") %></a>
                       </div>
                     </td>
                     <td>
@@ -173,11 +180,12 @@ defmodule SymphonyElixirWeb.DashboardLive do
                           <button
                             type="button"
                             class="subtle-button"
-                            data-label="Copy ID"
+                            data-label={I18n.t(@language, "Copy ID")}
+                            data-copied={I18n.t(@language, "Copied")}
                             data-copy={entry.session_id}
-                            onclick="navigator.clipboard.writeText(this.dataset.copy); this.textContent = 'Copied'; clearTimeout(this._copyTimer); this._copyTimer = setTimeout(() => { this.textContent = this.dataset.label }, 1200);"
+                            onclick="navigator.clipboard.writeText(this.dataset.copy); this.textContent = this.dataset.copied; clearTimeout(this._copyTimer); this._copyTimer = setTimeout(() => { this.textContent = this.dataset.label }, 1200);"
                           >
-                            Copy ID
+                            <%= I18n.t(@language, "Copy ID") %>
                           </button>
                         <% else %>
                           <span class="muted">n/a</span>
@@ -201,8 +209,8 @@ defmodule SymphonyElixirWeb.DashboardLive do
                     </td>
                     <td>
                       <div class="token-stack numeric">
-                        <span>Total: <%= format_int(entry.tokens.total_tokens) %></span>
-                        <span class="muted">In <%= format_int(entry.tokens.input_tokens) %> / Out <%= format_int(entry.tokens.output_tokens) %></span>
+                        <span><%= I18n.t(@language, "Total:") %> <%= format_int(entry.tokens.total_tokens) %></span>
+                        <span class="muted"><%= I18n.t(@language, "In") %> <%= format_int(entry.tokens.input_tokens) %> / <%= I18n.t(@language, "Out") %> <%= format_int(entry.tokens.output_tokens) %></span>
                       </div>
                     </td>
                   </tr>
@@ -215,37 +223,37 @@ defmodule SymphonyElixirWeb.DashboardLive do
         <section class="section-card">
           <div class="section-header">
             <div>
-              <h2 class="section-title">Blocked sessions</h2>
-              <p class="section-copy">Issues paused because Codex requested operator input or approval.</p>
+              <h2 class="section-title"><%= I18n.t(@language, "Blocked sessions") %></h2>
+              <p class="section-copy"><%= I18n.t(@language, "Issues paused because Codex requested operator input or approval.") %></p>
             </div>
           </div>
 
           <%= if @payload.blocked == [] do %>
-            <p class="empty-state">No blocked sessions.</p>
+            <p class="empty-state"><%= I18n.t(@language, "No blocked sessions.") %></p>
           <% else %>
             <div class="table-wrap">
               <table class="data-table" style="min-width: 760px;">
                 <thead>
                   <tr>
-                    <th>Issue</th>
-                    <th>State</th>
-                    <th>Session</th>
-                    <th>Blocked at</th>
-                    <th>Last update</th>
-                    <th>Error</th>
+                    <th><%= I18n.t(@language, "Issue") %></th>
+                    <th><%= I18n.t(@language, "State") %></th>
+                    <th><%= I18n.t(@language, "Session") %></th>
+                    <th><%= I18n.t(@language, "Blocked at") %></th>
+                    <th><%= I18n.t(@language, "Last update") %></th>
+                    <th><%= I18n.t(@language, "Error") %></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr :for={entry <- @payload.blocked}>
                     <td>
                       <div class="issue-stack">
-                        <.issue_identifier identifier={entry.issue_identifier} url={entry.issue_url} />
-                        <a class="issue-link" href={"/api/v1/#{entry.issue_identifier}"}>JSON details</a>
+                        <.issue_identifier language={@language} identifier={entry.issue_identifier} url={entry.issue_url} />
+                        <a class="issue-link" href={"/api/v1/#{entry.issue_identifier}"}><%= I18n.t(@language, "JSON details") %></a>
                       </div>
                     </td>
                     <td>
                       <span class={state_badge_class(entry.state || "Blocked")}>
-                        <%= entry.state || "Blocked" %>
+                        <%= entry.state || I18n.t(@language, "Blocked") %>
                       </span>
                     </td>
                     <td>
@@ -253,11 +261,12 @@ defmodule SymphonyElixirWeb.DashboardLive do
                         <button
                           type="button"
                           class="subtle-button"
-                          data-label="Copy ID"
+                          data-label={I18n.t(@language, "Copy ID")}
+                            data-copied={I18n.t(@language, "Copied")}
                           data-copy={entry.session_id}
-                          onclick="navigator.clipboard.writeText(this.dataset.copy); this.textContent = 'Copied'; clearTimeout(this._copyTimer); this._copyTimer = setTimeout(() => { this.textContent = this.dataset.label }, 1200);"
+                          onclick="navigator.clipboard.writeText(this.dataset.copy); this.textContent = this.dataset.copied; clearTimeout(this._copyTimer); this._copyTimer = setTimeout(() => { this.textContent = this.dataset.label }, 1200);"
                         >
-                          Copy ID
+                          <%= I18n.t(@language, "Copy ID") %>
                         </button>
                       <% else %>
                         <span class="muted">n/a</span>
@@ -289,30 +298,30 @@ defmodule SymphonyElixirWeb.DashboardLive do
         <section class="section-card">
           <div class="section-header">
             <div>
-              <h2 class="section-title">Retry queue</h2>
-              <p class="section-copy">Issues waiting for the next retry window.</p>
+              <h2 class="section-title"><%= I18n.t(@language, "Retry queue") %></h2>
+              <p class="section-copy"><%= I18n.t(@language, "Issues waiting for the next retry window.") %></p>
             </div>
           </div>
 
           <%= if @payload.retrying == [] do %>
-            <p class="empty-state">No issues are currently backing off.</p>
+            <p class="empty-state"><%= I18n.t(@language, "No issues are currently backing off.") %></p>
           <% else %>
             <div class="table-wrap">
               <table class="data-table" style="min-width: 680px;">
                 <thead>
                   <tr>
-                    <th>Issue</th>
-                    <th>Attempt</th>
-                    <th>Due at</th>
-                    <th>Error</th>
+                    <th><%= I18n.t(@language, "Issue") %></th>
+                    <th><%= I18n.t(@language, "Attempt") %></th>
+                    <th><%= I18n.t(@language, "Due at") %></th>
+                    <th><%= I18n.t(@language, "Error") %></th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr :for={entry <- @payload.retrying}>
                     <td>
                       <div class="issue-stack">
-                        <.issue_identifier identifier={entry.issue_identifier} url={entry.issue_url} />
-                        <a class="issue-link" href={"/api/v1/#{entry.issue_identifier}"}>JSON details</a>
+                        <.issue_identifier language={@language} identifier={entry.issue_identifier} url={entry.issue_url} />
+                        <a class="issue-link" href={"/api/v1/#{entry.issue_identifier}"}><%= I18n.t(@language, "JSON details") %></a>
                       </div>
                     </td>
                     <td><%= entry.attempt %></td>
@@ -341,6 +350,7 @@ defmodule SymphonyElixirWeb.DashboardLive do
     Endpoint.config(:snapshot_timeout_ms) || 15_000
   end
 
+  attr(:language, :string, required: true)
   attr(:identifier, :string, required: true)
   attr(:url, :string, default: nil)
 
@@ -354,7 +364,7 @@ defmodule SymphonyElixirWeb.DashboardLive do
         href={@href}
         target="_blank"
         rel="noopener noreferrer"
-        aria-label={"Open #{@identifier} in the issue tracker"}
+        aria-label={I18n.t(@language, "Open %{identifier} in the issue tracker", identifier: @identifier)}
       ><%= @identifier %></a>
     <% else %>
       <span class="issue-id"><%= @identifier %></span>

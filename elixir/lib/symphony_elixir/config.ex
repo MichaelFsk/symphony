@@ -77,6 +77,14 @@ defmodule SymphonyElixir.Config do
     end
   end
 
+  @spec language() :: String.t()
+  def language do
+    case Application.get_env(:symphony_elixir, :language_override) do
+      language when language in ["en", "zh-CN"] -> language
+      _ -> settings!().observability.language
+    end
+  end
+
   @spec server_port() :: non_neg_integer() | nil
   def server_port do
     case Application.get_env(:symphony_elixir, :server_port_override) do

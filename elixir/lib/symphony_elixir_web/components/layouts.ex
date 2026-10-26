@@ -5,22 +5,25 @@ defmodule SymphonyElixirWeb.Layouts do
 
   use Phoenix.Component
 
+  alias SymphonyElixir.{Config, I18n}
+
   @spec root(map()) :: Phoenix.LiveView.Rendered.t()
   def root(assigns) do
     assigns =
       assigns
+      |> assign(:language, Map.get(assigns, :language, Config.language()))
       |> assign(:csrf_token, Plug.CSRFProtection.get_csrf_token())
       |> assign(:dashboard_css_url, SymphonyElixirWeb.StaticAssets.dashboard_css_url())
       |> assign(:favicon_url, SymphonyElixirWeb.StaticAssets.favicon_url())
 
     ~H"""
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang={@language}>
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="csrf-token" content={@csrf_token} />
-        <title>Symphony Observability</title>
+        <title><%= I18n.t(@language, "Symphony Observability") %></title>
         <link rel="icon" type="image/png" sizes="128x128" href={@favicon_url} />
         <script defer src="/vendor/phoenix_html/phoenix_html.js"></script>
         <script defer src="/vendor/phoenix/phoenix.js"></script>

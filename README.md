@@ -1,5 +1,7 @@
 # Symphony
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 Symphony turns project work into isolated, autonomous implementation runs, allowing teams to manage
 work instead of supervising coding agents.
 
@@ -32,9 +34,16 @@ and run the Elixir-based Symphony implementation. You can also ask your favorite
 help with the setup:
 
 > Set up Symphony for my repository based on
-> https://github.com/openai/symphony/blob/main/elixir/README.md
+> https://github.com/MichaelFsk/symphony/blob/main/elixir/README.md
 
 ---
+
+## Interface language
+
+The Elixir implementation supports English (`en`, the default) and Simplified Chinese (`zh-CN`).
+Select a language using `observability.language` in your project’s `WORKFLOW.md` or the
+`--language` command-line flag. The web dashboard also provides an English / 简体中文 switch.
+See the [language settings](elixir/README.md#language) for examples and scope.
 
 ## License
 
